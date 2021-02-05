@@ -1,0 +1,64 @@
+esphome:
+  name: "sebaschan"
+  platform: ESP8266
+  board: nodemcuv2
+  on_boot:
+    then:
+      - switch.turn_off: t_pickup
+      - switch.turn_off: t_ring_one
+
+api: !secret api
+ota: !secret ota
+wifi: !secret wifi
+logger:
+
+switch:
+  - platform: gpio
+    pin: D3
+    id: ring_one
+
+  - platform: gpio
+    pin: GPIO12
+    id: pickup
+
+  - platform: template
+    name: "Pick up phone"
+    id: t_pickup
+    lambda: |-
+      return !digitalRead(12);
+    turn_on_action:
+      - lambda: |-
+          pinMode(12, OUTPUT);
+          digitalWrite(12, LOW);
+    turn_off_action:
+      - lambda: |-
+            pinMode(12, INPUT);
+
+  - platform: template
+    name: "Open Ring One Door"
+    id: t_ring_one
+    lambda: |-
+      return !digitalRead(D3);
+    turn_on_action:
+      - lambda: |-
+          pinMode(D3, OUTPUT);
+          digitalWrite(D3, LOW);
+    turn_off_action:
+      - lambda: |-
+            pinMode(D3, INPUT);
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO4
+      inverted: True
+    filters:
+      - delayed_on: 1ms
+      - delayed_off: 2s
+    name: "Call ring"
+    on_press:
+      then:
+        - delay: 2s
+        - switch.turn_on: t_pickup
+        - delay: 2s
+        - switch.turn_off: t_pickup
