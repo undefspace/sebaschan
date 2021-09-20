@@ -3,9 +3,15 @@ esphome:
   platform: ESP8266
   board: nodemcuv2
   on_boot:
-    then:
-      - switch.turn_off: t_pickup
-      - switch.turn_off: t_ring_one
+  # Indicating boot with that.
+    - delay: 0.1s
+    - switch.turn_on: t_pickup
+    - delay: 0.1s
+    - switch.turn_off: t_pickup
+    - delay: 0.1s
+    - switch.turn_on: t_pickup
+    - delay: 0.1s
+    - switch.turn_off: t_pickup
 
 api: !secret api
 ota: !secret ota
@@ -14,12 +20,25 @@ logger:
 
 switch:
   - platform: gpio
-    pin: D3
+    pin:
+      number: D3
+      mode: OUTPUT_OPEN_DRAIN
+      inverted: true
     id: ring_one
+    restore_mode: ALWAYS_OFF
 
   - platform: gpio
-    pin: GPIO12
+    pin: D5
+    id: counter_up
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    pin:
+      number: GPIO12
+      mode: OUTPUT_OPEN_DRAIN
+      inverted: true
     id: pickup
+    restore_mode: ALWAYS_OFF
 
   - platform: template
     name: "Pick up phone"
@@ -27,12 +46,9 @@ switch:
     lambda: |-
       return !digitalRead(12);
     turn_on_action:
-      - lambda: |-
-          pinMode(12, OUTPUT);
-          digitalWrite(12, LOW);
+      - switch.turn_on: pickup
     turn_off_action:
-      - lambda: |-
-            pinMode(12, INPUT);
+      - switch.turn_off: pickup
 
   - platform: template
     name: "Open Ring One Door"
@@ -40,12 +56,12 @@ switch:
     lambda: |-
       return !digitalRead(D3);
     turn_on_action:
-      - lambda: |-
-          pinMode(D3, OUTPUT);
-          digitalWrite(D3, LOW);
+      - switch.turn_on: counter_up
+      - switch.turn_on: ring_one
+      - delay: 0.05s
+      - switch.turn_off: counter_up
     turn_off_action:
-      - lambda: |-
-            pinMode(D3, INPUT);
+      - switch.turn_off: ring_one
 
 binary_sensor:
   - platform: gpio
